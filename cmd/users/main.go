@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -34,6 +35,7 @@ func main() {
 	cfg.DBPort = getEnvOrDefault("USERS_DB_PORT", "5432")
 	cfg.DBName = getEnvOrDefault("USERS_DB_NAME", "users_db")
 	cfg.GRPCPort = getEnvOrDefault("USERS_GRPC_PORT", "50051")
+	cfg.HTTPPort = getEnvOrDefault("USERS_HTTP_PORT", "8081") // Puerto diferente al gateway
 
 	// Initialize logger
 	log := logger.New("users-service", cfg.LogLevel)

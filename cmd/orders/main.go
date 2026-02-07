@@ -31,7 +31,7 @@ func main() {
 	// Load configuration
 	cfg := config.LoadForService("ORDERS")
 	cfg.DBHost = getEnvOrDefault("ORDERS_DB_HOST", "localhost")
-	cfg.DBPort = getEnvOrDefault("ORDERS_DB_PORT", "5433")
+	cfg.DBPort = getEnvOrDefault("ORDERS_DB_PORT", "5432") // 5432 para local, 5433 para docker
 	cfg.DBName = getEnvOrDefault("ORDERS_DB_NAME", "orders_db")
 	cfg.GRPCPort = getEnvOrDefault("ORDERS_GRPC_PORT", "50052")
 	cfg.HTTPPort = getEnvOrDefault("ORDERS_HTTP_PORT", "8082")
