@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package users.v1;
+
+option go_package = "go-micro/api/gen/users/v1;userspb";
+
+// UserService provides user operations
+service UserService {
+  // GetUser retrieves a user by ID
+  rpc GetUser(GetUserRequest) returns (UserResponse);
+  
+  // CreateUser creates a new user
+  rpc CreateUser(CreateUserRequest) returns (UserResponse);
+}
+
+// GetUserRequest is the request for GetUser
+message GetUserRequest {
+  uint64 id = 1;
+}
+
+// CreateUserRequest is the request for CreateUser
+message CreateUserRequest {
+  string name = 1;
+  string email = 2;
+}
+
+// UserResponse is the response containing user data
+message UserResponse {
+  uint64 id = 1;
+  string name = 2;
+  string email = 3;
+  string created_at = 4;
+}

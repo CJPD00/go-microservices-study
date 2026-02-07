@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+  # PostgreSQL for Users Service
+  users-db:
+    image: postgres:15-alpine
+    container_name: users-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: users_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - users-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-micro
+
+  # PostgreSQL for Orders Service
+  orders-db:
+    image: postgres:15-alpine
+    container_name: orders-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - orders-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-micro
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-micro
+
+  # Users Service
+  users:
+    build:
+      context: ..
+      dockerfile: Dockerfile.users
+    container_name: users-service
+    depends_on:
+      users-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SERVICE_NAME: users
+      HTTP_PORT: "8081"
+      USERS_GRPC_PORT: "50051"
+      USERS_DB_HOST: users-db
+      USERS_DB_PORT: "5432"
+      USERS_DB_USER: postgres
+      USERS_DB_PASSWORD: postgres
+      USERS_DB_NAME: users_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      LOG_LEVEL: debug
+      GRPC_MTLS_ENABLED: "false"
+    ports:
+      - "8081:8081"
+      - "50051:50051"
+    networks:
+      - go-micro
+
+  # Orders Service
+  orders:
+    build:
+      context: ..
+      dockerfile: Dockerfile.orders
+    container_name: orders-service
+    depends_on:
+      orders-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      users:
+        condition: service_started
+    environment:
+      SERVICE_NAME: orders
+      ORDERS_HTTP_PORT: "8082"
+      ORDERS_GRPC_PORT: "50052"
+      ORDERS_DB_HOST: orders-db
+      ORDERS_DB_PORT: "5432"
+      ORDERS_DB_USER: postgres
+      ORDERS_DB_PASSWORD: postgres
+      ORDERS_DB_NAME: orders_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      USERS_GRPC_ADDR: users:50051
+      LOG_LEVEL: debug
+      GRPC_MTLS_ENABLED: "false"
+    ports:
+      - "8082:8082"
+      - "50052:50052"
+    networks:
+      - go-micro
+
+  # Gateway
+  gateway:
+    build:
+      context: ..
+      dockerfile: Dockerfile.gateway
+    container_name: gateway
+    depends_on:
+      users:
+        condition: service_started
+      orders:
+        condition: service_started
+    environment:
+      SERVICE_NAME: gateway
+      HTTP_PORT: "8080"
+      HTTPS_PORT: "8443"
+      USERS_GRPC_ADDR: users:50051
+      ORDERS_GRPC_ADDR: orders:50052
+      LOG_LEVEL: debug
+      TLS_ENABLED: "false"
+      GRPC_MTLS_ENABLED: "false"
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    networks:
+      - go-micro
+
+networks:
+  go-micro:
+    driver: bridge
+
+volumes:
+  users-db-data:
+  orders-db-data:
+  rabbitmq-data:

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "go-micro/api/gen/orders/v1;orderspb";
+
+// OrderService provides order operations
+service OrderService {
+  // GetOrder retrieves an order by ID
+  rpc GetOrder(GetOrderRequest) returns (OrderResponse);
+  
+  // CreateOrder creates a new order
+  rpc CreateOrder(CreateOrderRequest) returns (OrderResponse);
+}
+
+// GetOrderRequest is the request for GetOrder
+message GetOrderRequest {
+  uint64 id = 1;
+}
+
+// CreateOrderRequest is the request for CreateOrder
+message CreateOrderRequest {
+  uint64 user_id = 1;
+  double total = 2;
+}
+
+// OrderResponse is the response containing order data
+message OrderResponse {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  double total = 3;
+  string status = 4;
+  string created_at = 5;
+}
